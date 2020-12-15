@@ -1,14 +1,14 @@
+var max_bezier_depth = 10;    // max recursion depth -> 2^depth segments
+var num_points = 3;          // number of control/input point
+var CP = Array(num_points);
+var line_width = 4;
+var point_size = 10;
+var back_color = '#ffffff';
+var line_color = '#ff0000';
+var point_color = '#000000';
+
 var canvas;
 var ctx;
-
-var max_bezier_depth = 5;    // max recursion depth -> 2^depth segments
-var num_points = 4;          // number of control/input point
-var CP = Array(num_points);
-var line_width = 2;
-var point_size = 4;
-var back_color = '#206020';
-var line_color = '#f0f0f0';
-var point_color = '#d0d020';
 
 window.addEventListener('load', function () {
   canvas = document.getElementById('beziers');
@@ -22,10 +22,14 @@ window.addEventListener('load', function () {
   }
 }, false);
 
+// Aufgabe 4
+document.getElementById('stepI').oninput = () => {
+  drawVisualization(document.getElementById('stepI').value);
+}
+
 function resizer() {
   if (canvas.width != document.body.clientWidth) {
     canvas.width = document.body.clientWidth;
-    console.log(canvas.width, canvas.height);
     draw();
   }
 }
@@ -33,7 +37,6 @@ function resizer() {
 function draw() {
   for (var i = 0; i < num_points; i++) {
     CP[i] = getRandomPoint(canvas.width, canvas.height);
-    console.log(CP[i]);
   }
 
   if (ctx) {
@@ -41,7 +44,7 @@ function draw() {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.lineWidth = line_width;
     ctx.strokeStyle = line_color;
-    bezier(CP);
+    bezierN(CP, max_bezier_depth);
 
     for (var i = 0; i < num_points; i++) {
       point(CP[i]);
@@ -63,33 +66,96 @@ function point(P) {
   ctx.fillRect(P.x - point_size / 2, P.y - point_size / 2, point_size, point_size);
 }
 
-function bezier(points) {
-  if (points.length == 4) {
-    bezier4(points[0], points[1], points[2], points[3], max_bezier_depth);
-  }
-}
-
-function bezier4(P0, P1, P2, P3, depth) {
-  if (depth === 0) {
-    line(P0, P3);
-  } else {
-    var P01 = new P(0.5 * (P0.x + P1.x), 0.5 * (P0.y + P1.y));
-    var P12 = new P(0.5 * (P1.x + P2.x), 0.5 * (P1.y + P2.y));
-    var P23 = new P(0.5 * (P2.x + P3.x), 0.5 * (P2.y + P3.y));
-
-    var P012 = new P(0.5 * (P01.x + P12.x), 0.5 * (P01.y + P12.y));
-    var P123 = new P(0.5 * (P12.x + P23.x), 0.5 * (P12.y + P23.y));
-
-    var P0123 = new P(0.5 * (P012.x + P123.x), 0.5 * (P012.y + P123.y));
-
-    bezier4(P0, P01, P012, P0123, depth - 1);
-    bezier4(P0123, P123, P23, P3, depth - 1);
-  }
-}
-
 function line(P0, P1) {
   ctx.beginPath();
   ctx.moveTo(P0.x, P0.y);
   ctx.lineTo(P1.x, P1.y);
   ctx.stroke();
+}
+
+// Aufgabe 1
+function bezierN(points, depth, once = false) {
+  if (depth === 0) {
+    line(points[0], points[points.length - 1]);
+    return;
+  }
+
+  var iterativeFirstPoints = [points[0]];
+  var iterativeLastPoints = [points[points.length - 1]];
+
+  var currentLayerOfPoints = points;
+  do {
+    currentLayerOfPoints = computeNextLayer(currentLayerOfPoints);
+    iterativeFirstPoints.push(currentLayerOfPoints[0]);
+    iterativeLastPoints.push(currentLayerOfPoints[currentLayerOfPoints.length - 1]);
+  } while (currentLayerOfPoints.length > 1);
+
+  bezierN(iterativeFirstPoints, depth - 1);
+  bezierN(iterativeLastPoints, depth - 1);
+}
+
+function computeNextLayer(points) {
+  var calculated_points = [];
+  for (var i = 0; i < points.length - 1; i++) {
+    calculated_points[i] = calcHalf(points[i], points[i + 1]);
+  }
+  return calculated_points;
+}
+
+function calcHalf(p1, p2) {
+  return new P(0.5 * (p1.x + p2.x), 0.5 * (p1.y + p2.y));
+}
+
+
+// Aufgabe 3
+function drawVisualization(i) {
+  for (var j = 0; j < CP.length - 1; j++) {
+    ctx.setLineDash([15, 5]);
+    ctx.strokeStyle = '#000000';
+    line(CP[j], CP[j + 1]);
+  }
+
+  var currentLayerOfPoints = CP;
+  do {
+    currentLayerOfPoints = computeNextLayerT(currentLayerOfPoints, i);
+    for (var j = 0; j < currentLayerOfPoints.length - 1; j++) {
+      ctx.setLineDash([5, 5]);
+      ctx.strokeStyle = getRandomColor();
+      point(currentLayerOfPoints[j]);
+      line(currentLayerOfPoints[j], currentLayerOfPoints[j + 1]);
+    }
+    point(currentLayerOfPoints[currentLayerOfPoints.length - 1]);
+  } while (currentLayerOfPoints.length > 1);
+
+}
+
+function getRandomColor() {
+  var letters = '0123456789ABCDEF';
+  var color = '#';
+  for (var i = 0; i < 6; i++) {
+    color += letters[Math.floor(Math.random() * 16)];
+  }
+  return color;
+}
+
+function computeNextLayerT(points, i) {
+  var calculated_points = [];
+  for (var i = 0; i < points.length - 1; i++) {
+    calculated_points[i] = calcT(points[i], points[i + 1], i);
+  }
+  return calculated_points;
+}
+
+function calcT(p1, p2, i) {
+  // var length = getLength(p1, p2);
+  // var offset = i * length;
+
+  // var directionVector = { x: p1.x - p2.x, y: p1.y - p2.y };
+
+  return new P(0.5 * (p1.x + p2.x), 0.5 * (p1.y + p2.y));
+}
+
+
+function getLength(p1, p2) {
+  return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
 }
