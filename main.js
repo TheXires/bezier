@@ -1,5 +1,5 @@
-var max_bezier_depth = 11;    // max recursion depth -> 2^depth segments
-var num_points = 4;          // number of control/input point
+var max_bezier_depth = 7;    // max recursion depth -> 2^depth segments
+var num_points = 6;          // number of control/input point
 var CP = Array(num_points);
 var line_width = 4;
 var point_size = 10;
@@ -53,6 +53,9 @@ function randomize() {
 let debounceTimestamp;
 
 // Aufgabe 3
+/**
+ * Draws the graph with the visualization indicators
+ */
 function drawVisualization() {
   if (debounceTimestamp === undefined || ((new Date().getTime()) - debounceTimestamp) > 20) {
     debounceTimestamp = new Date().getTime();
@@ -114,6 +117,11 @@ function line(P0, P1) {
 }
 
 // Aufgabe 1
+/**
+ * Draws bezier curve for n depth
+ * @param {*} points
+ * @param {*} depth
+ */
 function bezierN(points, depth) {
   if (depth === 0) {
     line(points[0], points[points.length - 1]);
@@ -134,6 +142,11 @@ function bezierN(points, depth) {
   bezierN(iterativeLastPoints, depth - 1);
 }
 
+/**
+ * Computes the next layer of points by the current points
+ * @param {*} points current layer of points
+ * @param {*} stepI the weight wo where the 'middle' is on the line between 2 points
+ */
 function computeNextLayer(points, stepI) {
   var calculated_points = [];
   for (var i = 0; i < points.length - 1; i++) {
@@ -142,16 +155,37 @@ function computeNextLayer(points, stepI) {
   return calculated_points;
 }
 
+/**
+ * Calculates a point between two given points with the amount(0 to 1) stepI of the total length
+
+ * p1 ----------- p2
+
+ *           ^          stepI 0.5
+ *
+ * p1 ----------- p2
+ *
+*              ^        stepI 0.7
+ *
+ * @param p1
+ * @param p2
+ * @param stepI
+ * @returns the point in the middle(or selected amount if not 0.5)
+ */
 function calc(p1, p2, stepI) {
   return new P(((1 - stepI) * p1.x + stepI * p2.x), ((1 - stepI) * p1.y + stepI * p2.y));
 }
 
 
-//bonus
-
+// Bonus
+// indicates if drag n drop is in progress when a point gets moved
 let dragInProgress = false;
+// indicates the currently dragged point by its index in the array
 let draggedPointIndex;
 
+/**
+ * Handles the mouse down event for drag n drop functionality
+ * @param {*} event
+ */
 function canvasDown(event) {
   if (event.which === 1) {
     const pointResult = calculateNearestPoint(calcMousePositionOnCanvas(event));
@@ -163,11 +197,19 @@ function canvasDown(event) {
   }
 }
 
+/**
+ * Handles the mouse up event for drag n drop functionality
+ * @param {*} event
+ */
 function canvasUp(event) {
   dragInProgress = false;
   canvas.style.cursor = "default";
 }
 
+/**
+ * Handles the right click event on the canvas to add or remove points
+ * @param {*} event
+ */
 function canvasOnRightClick(event) {
   const pointResult = calculateNearestPoint(calcMousePositionOnCanvas(event));
   if (pointResult.distance < 10) {
@@ -186,8 +228,10 @@ function canvasOnRightClick(event) {
   }
 }
 
-
-
+/**
+ * Handles the mouse move event to make the drag n drop work
+ * @param {*} event
+ */
 function canvasMove(event) {
   if (!dragInProgress) {
     if (calculateNearestPoint(calcMousePositionOnCanvas(event)).distance < 10) {
@@ -203,6 +247,10 @@ function canvasMove(event) {
   }
 }
 
+/**
+ * Calculates the correct mouse position coordinates on the canvas
+ * @param {*} event
+ */
 function calcMousePositionOnCanvas(event) {
   const canvasRect = canvas.getBoundingClientRect();
   const x = event.clientX - canvasRect.left;
@@ -210,6 +258,10 @@ function calcMousePositionOnCanvas(event) {
   return new P(x, y);
 }
 
+/**
+ * Calculates the nearest point of the point array to the mouse coords
+ * @param {*} mouseCoords
+ */
 function calculateNearestPoint(mouseCoords) {
   const distances = [];
   CP.forEach((currentPoint, index) => {
