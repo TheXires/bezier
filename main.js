@@ -1,4 +1,4 @@
-var max_bezier_depth = 70;    // max recursion depth -> 2^depth segments
+var max_bezier_depth = 50;    // max recursion depth -> 2^depth segments
 var num_points = 4;          // number of control/input point
 var CP = Array(num_points);
 var line_width = 4;
@@ -77,7 +77,7 @@ function drawVisualization() {
         point(currentLayerOfPoints[j]);
         line(currentLayerOfPoints[j], currentLayerOfPoints[j + 1]);
       }
-      point(currentLayerOfPoints[currentLayerOfPoints.length - 1]);
+      point(currentLayerOfPoints[currentLayerOfPoints.length - 1]);//letzer Punkt
     } while (currentLayerOfPoints.length > 1);
   }
 }
@@ -129,17 +129,12 @@ function bezierN(points, depth) {
   }
 
   // Aufgabe 2
-  /**
-   * Wenn erster und letzter Punkt einer Iteration eine Deistanz geringer als 1 aufweisen wird abgebrochen
-   * und die Linie gezeichnet. 
-   * Dies hat allerdings den Nachteil, dass wenn man einen der Startpunkte an die Mitte oder den anderen Startpunkt
-   * kommt diese sich direkt verbinden. Damit dies unwahrscheinlich ist und die Genauigkeit hoch,
-   * haben wir eine Distanz von 1 gewählt.
-   */
-  if (Math.sqrt(Math.pow(points[0].x - points[points.length - 1].x, 2) + Math.pow(points[0].y - points[points.length - 1].y, 2)) < 1) {
-    line(points[0], points[points.length - 1]);
-    return;
+  if (depth < max_bezier_depth &&
+    Math.pow(points[0].x - points[points.length - 1].x, 2) + Math.pow(points[0].y - points[points.length - 1].y, 2) < .5) {
+      line(points[0], points[points.length - 1]);
+      return;
   }
+  
   
   var iterativeFirstPoints = [points[0]];
   var iterativeLastPoints = [points[points.length - 1]];
